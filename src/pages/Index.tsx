@@ -6,14 +6,40 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Slider } from '@/components/ui/slider';
+import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('home');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [ipCount, setIpCount] = useState(10);
+  const [traffic, setTraffic] = useState(100);
+  const [protocol, setProtocol] = useState('http');
 
   const scrollToSection = (id: string) => {
     setActiveSection(id);
+    setMobileMenuOpen(false);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const calculatePrice = () => {
+    let basePrice = 0;
+    if (ipCount <= 10) basePrice = 990;
+    else if (ipCount <= 50) basePrice = 2990;
+    else basePrice = 9990;
+
+    let protocolMultiplier = 1;
+    if (protocol === 'socks5') protocolMultiplier = 1.3;
+    else if (protocol === 'all') protocolMultiplier = 1.5;
+
+    let trafficCost = 0;
+    if (traffic > 100) {
+      trafficCost = (traffic - 100) * 5;
+    }
+
+    return Math.round(basePrice * protocolMultiplier + trafficCost);
   };
 
   return (
@@ -45,9 +71,41 @@ const Index = () => {
                 </button>
               ))}
             </div>
-            <Button className="bg-gradient-to-r from-primary to-secondary hover:opacity-90">
-              Войти
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button className="hidden md:flex bg-gradient-to-r from-primary to-secondary hover:opacity-90">
+                Войти
+              </Button>
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="md:hidden">
+                    <Icon name="Menu" size={24} />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-[300px] sm:w-[400px]">
+                  <nav className="flex flex-col gap-6 mt-8">
+                    {['home', 'pricing', 'features', 'api', 'faq', 'contact'].map((section) => (
+                      <button
+                        key={section}
+                        onClick={() => scrollToSection(section)}
+                        className={`text-lg font-medium transition-colors hover:text-primary text-left ${
+                          activeSection === section ? 'text-primary' : 'text-muted-foreground'
+                        }`}
+                      >
+                        {section === 'home' && 'Главная'}
+                        {section === 'pricing' && 'Тарифы'}
+                        {section === 'features' && 'Преимущества'}
+                        {section === 'api' && 'API'}
+                        {section === 'faq' && 'FAQ'}
+                        {section === 'contact' && 'Контакты'}
+                      </button>
+                    ))}
+                    <Button className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 mt-4">
+                      Войти
+                    </Button>
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </nav>
       </header>
@@ -162,6 +220,87 @@ const Index = () => {
               </Card>
             ))}
           </div>
+          
+          <div className="max-w-4xl mx-auto mt-20">
+            <Card className="border-primary/30 shadow-xl shadow-primary/10">
+              <CardHeader className="text-center">
+                <CardTitle className="text-3xl gradient-text">Калькулятор стоимости</CardTitle>
+                <CardDescription>Рассчитайте стоимость индивидуального плана</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <div>
+                  <Label className="text-base font-semibold mb-3 block">
+                    Количество IP адресов: <span className="text-primary">{ipCount}</span>
+                  </Label>
+                  <Slider
+                    value={[ipCount]}
+                    onValueChange={(val) => setIpCount(val[0])}
+                    min={1}
+                    max={200}
+                    step={1}
+                    className="mb-2"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>1</span>
+                    <span>200</span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-base font-semibold mb-3 block">
+                    Трафик в месяц: <span className="text-primary">{traffic === 500 ? 'Безлимит' : `${traffic} GB`}</span>
+                  </Label>
+                  <Slider
+                    value={[traffic]}
+                    onValueChange={(val) => setTraffic(val[0])}
+                    min={10}
+                    max={500}
+                    step={10}
+                    className="mb-2"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>10 GB</span>
+                    <span>Безлимит</span>
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-base font-semibold mb-3 block">Протокол</Label>
+                  <div className="grid grid-cols-3 gap-4">
+                    {[
+                      { value: 'http', label: 'HTTP/HTTPS', price: '+0%' },
+                      { value: 'socks5', label: 'SOCKS5', price: '+30%' },
+                      { value: 'all', label: 'Все протоколы', price: '+50%' },
+                    ].map((p) => (
+                      <button
+                        key={p.value}
+                        onClick={() => setProtocol(p.value)}
+                        className={`p-4 rounded-lg border-2 transition-all hover:scale-105 ${
+                          protocol === p.value
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <div className="font-semibold text-sm mb-1">{p.label}</div>
+                        <div className="text-xs text-muted-foreground">{p.price}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-6 border-t border-border">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xl font-semibold">Итоговая стоимость:</span>
+                    <span className="text-4xl font-bold gradient-text">{calculatePrice()} ₽/мес</span>
+                  </div>
+                  <Button className="w-full bg-gradient-to-r from-primary to-accent hover:opacity-90 text-lg py-6">
+                    Оформить подписку
+                    <Icon name="ArrowRight" className="ml-2" size={20} />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
@@ -223,7 +362,82 @@ const Index = () => {
         </div>
       </section>
 
-      <section id="api" className="py-20 px-6 bg-gradient-to-b from-background to-muted/20">
+      <section className="py-20 px-6 bg-gradient-to-b from-background to-muted/20">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-5xl font-bold mb-4 gradient-text">Отзывы клиентов</h2>
+            <p className="text-xl text-muted-foreground">Что говорят о нас наши пользователи</p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {[
+              {
+                name: 'Алексей М.',
+                role: 'SMM-специалист',
+                avatar: '👨‍💼',
+                rating: 5,
+                text: 'Использую ProxyElite для продвижения клиентских аккаунтов в Instagram. Скорость отличная, IP не банятся. Поддержка отвечает моментально!',
+              },
+              {
+                name: 'Мария К.',
+                role: 'Веб-разработчик',
+                avatar: '👩‍💻',
+                rating: 5,
+                text: 'API документация просто идеальная. Интегрировала прокси в свой парсер за 15 минут. Автоматическая ротация работает безупречно.',
+              },
+              {
+                name: 'Дмитрий П.',
+                role: 'Владелец e-commerce',
+                avatar: '🧑‍💼',
+                rating: 5,
+                text: 'Перешёл с другого сервиса и не жалею. Цены адекватные, качество на высоте. Особенно нравится выбор городов для таргетинга.',
+              },
+              {
+                name: 'Елена С.',
+                role: 'SEO-специалист',
+                avatar: '👩‍🔧',
+                rating: 5,
+                text: 'Пользуюсь уже полгода для проверки позиций сайтов в разных регионах. Стабильность 99.9% — это не маркетинг, это реальность.',
+              },
+              {
+                name: 'Игорь В.',
+                role: 'Data Analyst',
+                avatar: '👨‍🔬',
+                rating: 5,
+                text: 'Собираю данные с маркетплейсов для аналитики. Скорость и безлимитный трафик на профессиональном тарифе — просто находка!',
+              },
+              {
+                name: 'Ольга Н.',
+                role: 'Маркетолог',
+                avatar: '👩‍💼',
+                rating: 5,
+                text: 'Дашборд с аналитикой помогает контролировать расходы. API интегрировали в CRM систему — всё работает как часы!',
+              },
+            ].map((review, i) => (
+              <Card key={i} className="hover:shadow-lg hover:shadow-primary/10 transition-all">
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="text-4xl">{review.avatar}</div>
+                    <div>
+                      <CardTitle className="text-lg">{review.name}</CardTitle>
+                      <CardDescription className="text-sm">{review.role}</CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    {[...Array(review.rating)].map((_, idx) => (
+                      <Icon key={idx} name="Star" className="text-accent fill-accent" size={16} />
+                    ))}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{review.text}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="api" className="py-20 px-6">
         <div className="container mx-auto max-w-5xl">
           <div className="text-center mb-16">
             <h2 className="text-5xl font-bold mb-4 gradient-text">API Документация</h2>
